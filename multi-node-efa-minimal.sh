@@ -63,12 +63,24 @@ multi_node_efa_minimal_script_builder()
 # copy SSH keys from Jenkins and install libfabric
 install_libfabric()
 {
-    check_provider_os "$1"
-    test_ssh "$1"
     set +x
     scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ${ami[1]}@$1:~/.ssh/id_rsa
     scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}.pub ${ami[1]}@$1:~/.ssh/id_rsa.pub
     execution_seq=$((${execution_seq}+1))
+    if [[ $INSTALL_DIR == /fsx ]]; then
+        scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} \
+            $WORKSPACE/libfabric-ci-scripts/lustre-client.sh ${ami[1]}@$1:~/
+        ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} \
+            ${ami[1]}@$1 "bash --login lustre-client.sh install_client $FSX_ID $DISTRO $FSX_DNS" \
+            2>&1 | tr \\r \\n | sed 's/\(.*\)/'$1' \1/'
+        test_ssh "$1"
+        ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} \
+            ${ami[1]}@$1 "bash --login lustre-client.sh mount $FSX_ID $DISTRO $FSX_DNS" \
+            2>&1 | tr \\r \\n | sed 's/\(.*\)/'$1' \1/'
+    fi
+    test_ssh "$1"
+    check_provider_os "$1"
+    test_ssh "$1"
     (ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@$1 \
         "bash -s" -- < ${tmp_script} \
         "$PULL_REQUEST_ID" "$PULL_REQUEST_REF" "$PROVIDER" 2>&1; \
@@ -131,6 +143,10 @@ done
 
 if [ ${REBOOT_AFTER_INSTALL} -eq 1 ]; then
     for IP in ${INSTANCE_IPS[@]}; do
+        if [[ $INSTALL_DIR == /fsx ]]; then
+            ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@${IP} \
+                "sudo umount /fsx" 2>&1 | tr \\r \\n | sed 's/\(.*\)/'$IP' \1/'
+        fi
         ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@${IP} \
             "sudo reboot" 2>&1 | tr \\r \\n | sed 's/\(.*\)/'$IP' \1/'
     done
