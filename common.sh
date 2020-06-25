@@ -372,11 +372,15 @@ efa_software_components()
             EFA_INSTALLER_URL="https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz"
         fi
     fi
-    echo "curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL" >> ${tmp_script}
-    cat <<-"EOF" >> ${tmp_script}
-    tar -xf efa-installer.tar.gz
-    cd ${HOME}/aws-efa-installer
+    if [[ $INSTALL_DIR == /fsx ]]; then
+        echo "cd /fsx/aws-efa-installer-latest/aws-efa-installer" >> ${tmp_script}
+    else
+        echo "curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL" >> ${tmp_script}
+        cat <<-"EOF" >> ${tmp_script}
+        tar -xf efa-installer.tar.gz
+        cd ${HOME}/aws-efa-installer
 EOF
+    fi
     if [ $TEST_SKIP_KMOD -eq 1 ]; then
         echo "sudo ./efa_installer.sh -y -k" >> ${tmp_script}
     else

@@ -28,13 +28,7 @@ export ENABLE_PLACEMENT_GROUP=1
 
 efa_software_components_minimal()
 {
-    if [ -z "$EFA_INSTALLER_URL" ]; then
-        EFA_INSTALLER_URL="https://s3-us-west-2.amazonaws.com/aws-efa-installer/aws-efa-installer-latest.tar.gz"
-    fi
-
-    echo "curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL" >> ${tmp_script}
-    echo "tar -xf efa-installer.tar.gz" >> ${tmp_script}
-    echo "cd \${HOME}/aws-efa-installer" >> ${tmp_script}
+    echo "cd /fsx/aws-efa-installer-latest/aws-efa-installer" >> ${tmp_script}
     echo "sudo ./efa_installer.sh -m -y" >> ${tmp_script}
 }
 
