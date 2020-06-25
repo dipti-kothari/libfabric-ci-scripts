@@ -15,6 +15,7 @@ trap 'on_exit'  EXIT
 slave_name=slave_$label
 slave_value=${!slave_name}
 ami=($slave_value)
+INSTALL_DIR=${INSTALL_DIR:-/home/${ami[1]}}
 NODES=2
 export MINIMAL=1
 export RUN_IMPI_TESTS=1
@@ -39,9 +40,11 @@ efa_software_components_minimal()
 
 multi_node_efa_minimal_script_builder()
 {
+    INSTALL_DIR=${INSTALL_DIR:-/home/${ami[1]}}
     type=$1
     set_var
     ${label}_update
+    echo "INSTALL_DIR=${INSTALL_DIR}" >> ${tmp_script}
     efa_software_components_minimal
 
     # Ubuntu disallows non-child process ptrace by default, which is

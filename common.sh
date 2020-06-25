@@ -10,6 +10,10 @@ tmp_script=${tmp_script:-$(mktemp -p $WORKSPACE)}
 RUN_IMPI_TESTS=${RUN_IMPI_TESTS:-0}
 ENABLE_PLACEMENT_GROUP=${ENABLE_PLACEMENT_GROUP:-0}
 TEST_SKIP_KMOD=${TEST_SKIP_KMOD:-0}
+if [ -n ${FSX_ID} ]; then
+    FSX_DNS=$(aws fsx describe-file-systems --file-system-ids ${FSX_ID} \
+                    --query FileSystems[*].DNSName --output text)
+fi
 get_alinux_ami_id() {
     region=$1
     aws ssm get-parameters --names /aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2 \
@@ -241,6 +245,7 @@ script_builder()
     fi
 
     ${label}_install_deps
+    echo "INSTALL_DIR=${INSTALL_DIR}" >> ${tmp_script}
     if [ -n "$LIBFABRIC_INSTALL_PATH" ]; then
         echo "LIBFABRIC_INSTALL_PATH=$LIBFABRIC_INSTALL_PATH" >> ${tmp_script}
     elif [ ${TARGET_BRANCH} == "v1.8.x" ]; then

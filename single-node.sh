@@ -6,6 +6,7 @@ trap 'on_exit'  EXIT
 slave_name=slave_$label
 slave_value=${!slave_name}
 ami=($slave_value)
+INSTALL_DIR=${INSTALL_DIR:-/home/${ami[1]}}
 NODES=1
 # Placement group is not needed for single-node tests.
 export ENABLE_PLACEMENT_GROUP=0
