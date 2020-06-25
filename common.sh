@@ -91,7 +91,7 @@ create_pg()
 
 delete_pg()
 {
-    if [ ${ENABLE_PLACEMENT_GROUP} -eq 0 ] || [ -z $PLACEMENT_GROUP ]; then
+    if [ ${ENABLE_PLACEMENT_GROUP} -eq 0 ] || [ -z $PLACEMENT_GROUP ] || [[ ${PLACEMENT_GROUP} != slave-pg* ]] ; then
         return 0
     fi
     AWS_DEFAULT_REGION=us-west-2 aws ec2 delete-placement-group \
@@ -133,7 +133,9 @@ create_instance()
             exit 1
     esac
     addl_args=""
-    if [ ${ENABLE_PLACEMENT_GROUP} -eq 1 ]; then
+    if  [[ -n ${PLACEMENT_GROUP} ]]; then
+        addl_args="--placement GroupName=${PLACEMENT_GROUP}"
+    elif [ ${ENABLE_PLACEMENT_GROUP} -eq 1 ];then
         echo "==> Creating placement group"
         create_pg || return 1
         addl_args="--placement GroupName=${PLACEMENT_GROUP}"
