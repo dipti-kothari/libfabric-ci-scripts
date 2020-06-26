@@ -50,7 +50,8 @@ multi_node_efa_minimal_script_builder()
     ${label}_install_deps
 
     # minimal flag require Intel MPI 2019U6 and above
-    cat install-impi.sh >> ${tmp_script}
+    echo "cd ${INSTALL_DIR}/l_mpi_2019.7.217" >> ${tmp_script}
+    echo "sudo ./install.sh -s accept.cfg" >> ${tmp_script}
 }
 
 # Test whether the instance is ready for SSH or not. Once the instance is ready,

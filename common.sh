@@ -257,7 +257,10 @@ script_builder()
     # Run the MPI test for EFA and multi-node tests.
     # Open MPI will be installed by the EFA installer so use that, install
     # Intel MPI using the AWS script for now.
-    if [ ${PROVIDER} == "efa" ] && [ ${type} == "multi-node" ] && [ ${RUN_IMPI_TESTS} -eq 1 ]; then
+    if [[ $INSTALL_DIR == /fsx ]]; then
+        echo "cd ${INSTALL_DIR}/l_mpi_2019.7.217" >> ${tmp_script}
+        echo "sudo ./install.sh -s accept.cfg" >> ${tmp_script}
+    elif [ ${PROVIDER} == "efa" ] && [ ${type} == "multi-node" ] && [ ${RUN_IMPI_TESTS} -eq 1 ]; then
             cat install-impi.sh >> ${tmp_script}
     fi
 
