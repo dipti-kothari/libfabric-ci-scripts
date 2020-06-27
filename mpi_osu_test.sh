@@ -9,12 +9,18 @@ mpi=$1
 shift
 libfabric_job_type=$1
 shift
+install_dir=$1
+shift
 hosts=$@
 hostfile=$(mktemp)
 out=$(mktemp)
 
-curl ${CURL_OPT} -O http://mvapich.cse.ohio-state.edu/download/mvapich/osu-micro-benchmarks-5.6.2.tar.gz
 osu_dir="osu-micro-benchmarks-5.6.2"
+curl ${CURL_OPT} -O http://mvapich.cse.ohio-state.edu/download/mvapich/osu-micro-benchmarks-5.6.2.tar.gz
+return_status=$?
+if [ $return_status -ne 0 ] && [[ $install_dir == /fsx ]]; then
+    cp -r /fsx/$osu_dir.tar.gz .
+fi
 one_rank_per_node=""
 if [ "${mpi}" == "ompi" ]; then
     ompi_setup

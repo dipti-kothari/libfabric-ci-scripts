@@ -11,6 +11,10 @@ if [ ! -d libfabric ]; then
     # Checkout libfabric bugfix branch so that fabtests is compatible with the
     # installed version of libfabric.
     git clone https://github.com/ofiwg/libfabric
+    return_status=$?
+    if [ $return_status -ne 0 ] && [[ $INSTALL_DIR == /fsx ]]; then
+        cp -r /fsx/libfabric ${HOME}
+    fi
     ofi_ver=$(${fi_info_bin} --version | grep 'libfabric api' | awk '{print $3}')
     pushd libfabric
     git checkout "v${ofi_ver}.x"

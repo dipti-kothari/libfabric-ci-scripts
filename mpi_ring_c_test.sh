@@ -9,12 +9,17 @@ mpi=$1
 shift
 libfabric_job_type=$1
 shift
+install_dir=$1
+shift
 hosts=$@
 hostfile=$(mktemp)
 out=$(mktemp)
 
 curl ${CURL_OPT} -O https://raw.githubusercontent.com/open-mpi/ompi/master/examples/ring_c.c
-
+return_status=$?
+if [ $return_status -ne 0 ] && [[ $install_dir == /fsx ]]; then
+    cp -r /fsx/ring_c.c ${HOME}
+fi
 if [ "${mpi}" == "ompi" ]; then
     ompi_setup
 elif [ "${mpi}" == "impi" ]; then
