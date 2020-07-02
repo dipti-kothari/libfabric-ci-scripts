@@ -59,8 +59,8 @@ multi_node_efa_minimal_script_builder()
 install_libfabric()
 {
     set +x
-    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ${ami[1]}@$1:~/.ssh/id_rsa
-    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}.pub ${ami[1]}@$1:~/.ssh/id_rsa.pub
+    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}_${DISTRO} ${ami[1]}@$1:~/.ssh/id_rsa
+    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}_${DISTRO}.pub ${ami[1]}@$1:~/.ssh/id_rsa.pub
     execution_seq=$((${execution_seq}+1))
     if [[ $INSTALL_DIR == /fsx ]]; then
         scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} \
@@ -104,8 +104,8 @@ multi_node_efa_minimal_script_builder
 
 # Generate ssh key for fabtests
 set +x
-if [ ! -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ]; then
-    ssh-keygen -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} -N ""
+if [ ! -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}_${DISTRO} ]; then
+    ssh-keygen -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}_${DISTRO} -N ""
 fi
 cat <<-"EOF" >>${tmp_script}
     set +x
