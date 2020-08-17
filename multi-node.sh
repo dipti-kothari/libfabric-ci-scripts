@@ -7,7 +7,6 @@ slave_name=slave_$label
 slave_value=${!slave_name}
 ami=($slave_value)
 NODES=2
-libfabric_job_type=${libfabric_job_type:-"master"}
 # Current LibfabricCI IAM permissions do not allow placement group creation,
 # enable this after it is fixed.
 # export ENABLE_PLACEMENT_GROUP=1
@@ -18,16 +17,10 @@ install_libfabric()
 {
     check_provider_os "$1"
     test_ssh "$1"
-    set +x
     scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ${ami[1]}@$1:~/.ssh/id_rsa
     scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}.pub ${ami[1]}@$1:~/.ssh/id_rsa.pub
-    execution_seq=$((${execution_seq}+1))
-    (ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@$1 \
-        "bash -s" -- < ${tmp_script} \
-        "$PULL_REQUEST_ID" "$PULL_REQUEST_REF" "$PROVIDER" 2>&1; \
-        echo "EXIT_CODE=$?" > $WORKSPACE/libfabric-ci-scripts/$1_install_libfabric.sh) \
-        | tr \\r \\n | sed 's/\(.*\)/'$1' \1/' | tee ${output_dir}/${execution_seq}_$1_install_libfabric.txt
-    set -x
+    ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@$1 \
+        "bash -s" -- < ${tmp_script}
 }
 
 runfabtests_script_builder()
@@ -94,9 +87,6 @@ wait
 get_instance_ip
 INSTANCE_IPS=($INSTANCE_IPS)
 
-# Prepare AMI specific libfabric installation script
-script_builder multi-node
-
 # Generate ssh key for fabtests
 set +x
 if [ ! -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ]; then
@@ -110,10 +100,8 @@ cat <<-"EOF" >>${tmp_script}
 EOF
 set -x
 
-execution_seq=$((${execution_seq}+1))
-# SSH into nodes and install libfabric concurrently on all nodes
 for IP in ${INSTANCE_IPS[@]}; do
-    install_libfabric "$IP" &
+    install_libfabric "$IP"
 done
 wait
 
@@ -165,7 +153,6 @@ fi
 # Prepare runfabtests script to be run on the server (INSTANCE_IPS[0])
 runfabtests_script_builder
 
-execution_seq=$((${execution_seq}+1))
 # SSH into SERVER node and run fabtests
 N=$((${#INSTANCE_IPS[@]}-1))
 for i in $(seq 1 $N); do

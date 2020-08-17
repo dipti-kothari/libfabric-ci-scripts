@@ -1,0 +1,468 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+    StackName:
+        Description: Name for this service; used in cloud formation name
+        Type: String
+    VPCId:
+        Description: VPC ID for security group
+        Type: AWS::EC2::VPC::Id
+    SubnetId:
+        Description: Subnet ID for EBS and Instances
+        Type: AWS::EC2::Subnet::Id
+    JobType:
+        Description: JobType will help us in defining specific parameters for a particular job
+        Type: String
+        AllowedValues:
+            - PR
+            - EFAInstallerProdCanary
+            - LibfabricMasterCanary
+            - EFAInstallerPipeline
+    TestType:
+        Description: Specify whether the test is single node or multi-node test
+        Type: String
+        AllowedValues:
+            - single
+            - multi
+        Default: multi
+    SecurityGroup:
+        Description: Security group for root node, if not provided will be created as part of the stack
+        Type: String
+        Default: None
+    RootInstanceType:
+        Description: Instance type for root node
+        Type: String
+        Default: None
+    ComputeInstanceType:
+        Description: Instance type for compute node
+        Type: String
+        Default: None
+    AMI:
+        Description: Amazon Linux Image for root node
+        Type: String
+        Default: None
+    KeyName:
+        Description: SSh key used to launch the instance
+        Type: String
+        Default: None
+    Workspace:
+        Description: Unique path to the Jenkins Workspace/Codebuild ARN, used to tag resources
+        Type: String
+        Default: None
+    BuildNumber:
+        Description: Code Build/Jenkins run number, used to tag resources
+        Type: String
+        Default: None
+    NetworkInterfaceType:
+        Description: Type of Interface, default is None. Set efa to create EFA enabled instances
+        Type: String
+        Default: None
+    ComputeTemplateS3BucketName:
+        Description: S3 Bucket Name where the compute node template is stored
+        Type: String
+        Default: None
+    EnablePlacementGroup:
+        Description: Enable/Disable Placement Group
+        Type: Number
+        Default: 0
+    PullRequestId:
+        Description: PR Id required for PR jobs
+        Type: String
+        Default: None
+    PullRequestRef:
+        Description: PR Ref required for PR jobs
+        Type: String
+        Default: None
+    TargetBranch:
+        Description: Libfabric PR branch required for PR jobs
+        Type: String
+        Default: master
+    Label:
+        Description: Operating System label for the job
+        Type: String
+        Default: None
+    TestSkipKmod:
+        Description: Flag for EFA Installer
+        Type: Number
+        Default: 0
+    RunImpiTest:
+        Description: Install Intel MPI and run osu test with Intel MPI
+        Type: Number
+        Default: 0
+    CanarySubJob:
+        Description: SubJob of InstallerCanary
+        Type: String
+        Default: None
+        AllowedValues:
+            - multinode
+            - minimal
+            - skipkmod
+            - upgrade
+            - None 
+    EFAInstallerVersion:
+        Description: EFAInstaller Version to download
+        Type: String
+        Default: latest
+    LogstreamDate:
+        Description: Date when the log is created
+        Type: String
+        Default: 10-2-2020
+Metadata: {}
+Conditions:
+    IfNoSG: !Equals [!Ref 'SecurityGroup', None]
+    IfEFA: !Equals [!Ref 'NetworkInterfaceType', efa]
+    IfNoEFA: !Not 
+        - !Condition IfEFA
+    IfEFASG: !And
+        - !Condition IfNoSG
+        - !Condition IfEFA
+    IfDefaultSG: !And
+        - !Condition IfNoSG
+        - !Condition IfNoEFA 
+    IfPlacementGroup: !Equals [!Ref 'EnablePlacementGroup', 1]
+    IfMulti: !Equals [!Ref 'TestType', multi]
+Resources:
+    EFASecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Condition: IfEFASG
+        Properties:
+            GroupDescription: EFA Security Group
+            GroupName: !Sub '${StackName}_efa_sg'
+            VpcId: !Ref VPCId
+            SecurityGroupIngress:
+            # Allow SSH access to the nodes
+                - IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+                  CidrIp: 0.0.0.0/0
+            Tags: 
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+    EFASecurityGroupInbound:
+        Type: AWS::EC2::SecurityGroupIngress
+        Condition: IfEFASG
+        Properties:
+            # EFA security group rule to allow inbound traffic to self
+            IpProtocol: '-1'
+            SourceSecurityGroupId: !GetAtt EFASecurityGroup.GroupId
+            GroupId: !GetAtt EFASecurityGroup.GroupId
+    EFASecurityGroupOubound:
+        Type: AWS::EC2::SecurityGroupEgress
+        Condition: IfEFASG
+        Properties:
+            # EFA security group rule to allow outbound traffic to self
+            IpProtocol: '-1'
+            SourceSecurityGroupId: !GetAtt EFASecurityGroup.GroupId
+            GroupId: !GetAtt EFASecurityGroup.GroupId
+    EFASecurityGroupOuboundAll:
+        Type: AWS::EC2::SecurityGroupEgress
+        Condition: IfEFASG
+        Properties:
+            # Allow outbound traffic for git clone and for nodes to talk to themselves
+            IpProtocol: '-1'
+            FromPort: 0
+            ToPort: 65535
+            CidrIp: 0.0.0.0/0
+            GroupId: !GetAtt EFASecurityGroup.GroupId
+    DefaultSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Condition: IfDefaultSG
+        Properties:
+            GroupDescription: Default Security Group
+            GroupName: !Sub '${StackName}_default_sg'
+            VpcId: !Ref VPCId
+            SecurityGroupIngress:
+            # Allow SSH access to the nodes
+                - IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+                  CidrIp: 0.0.0.0/0
+            SecurityGroupEgress:
+            # Allow outbound traffic for git clone and for nodes to talk to themselves
+                - IpProtocol: '-1'
+                  FromPort: 0
+                  ToPort: 65535
+                  CidrIp: 0.0.0.0/0
+            Tags: 
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+    EFAPlacementGroup:
+        Type: AWS::EC2::PlacementGroup
+        Condition: IfPlacementGroup
+        Properties:
+            Strategy: cluster
+    EBSVolume:
+        Type: AWS::EC2::Volume
+        Properties: 
+            AutoEnableIO: True
+            AvailabilityZone: us-west-2a
+            Iops: 3200
+            MultiAttachEnabled: True
+            Size: 64
+            Tags: 
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+            VolumeType: io1
+    EFANetworkInterface:
+        Type: AWS::EC2::NetworkInterface
+        Condition: IfEFA
+        Properties:
+            InterfaceType: efa
+            GroupSet:
+                - !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup]
+            SubnetId: !Ref 'SubnetId'
+            Tags: 
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+    DefaultNetworkInterface:
+        Type: AWS::EC2::NetworkInterface
+        Condition: IfNoEFA
+        Properties:
+            GroupSet:
+                - !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]
+            SubnetId: !Ref 'SubnetId'
+            Tags: 
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+    CILogs:
+        Type: AWS::Logs::LogGroup
+        Properties:
+              LogGroupName: !Sub
+                - ${AWS::StackName}-${Date}
+                - { Date : !Ref LogstreamDate } 
+              RetentionInDays: 365
+    RootNode:
+        Type: 'AWS::EC2::Instance'
+        Metadata:
+            AWS::CloudFormation::Init:
+              config:
+                packages:
+                  yum:
+                    awslogs: []
+                files:
+                  "/etc/awslogs/awslogs.conf":
+                    content: !Sub |
+                      [general]
+                      state_file= /var/awslogs/state/agent-state
+
+                      [/var/log/user-data.log]
+                      file = /var/log/user-data.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-user-data.log
+                      datetime_format =
+
+                      [/var/log/awslogs.log]
+                      file = /var/log/awslogs.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-awslogs.log
+                      datetime_format =
+
+                      [/var/log/boot.log]
+                      file = /var/log/boot.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-boot.log
+                      datetime_format =
+
+                      [/var/log/cfn-init.log]
+                      file = /var/log/cfn-init.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-cfn-init.log
+                      datetime_format =
+
+                      [/var/log/cfn-wire.log]
+                      file = /var/log/cfn-wire.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-cfn-wire.log
+                      datetime_format =
+
+                      [/var/log/cloud-init.log]
+                      file = /var/log/cloud-init.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-cloud-init.log
+                      datetime_format =
+
+                      [/var/log/cloud-init-output.log]
+                      file = /var/log/cloud-init-output.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-cloud-init-output.log
+                      datetime_format =
+
+                      [/var/log/cfn-init-cmd.log]
+                      file = /var/log/cfn-init-cmd.log
+                      log_group_name = ${AWS::StackName}
+                      log_stream_name = Root-Node-cfn-init-cmd.log
+                      datetime_format =
+                    mode: '000400'
+                    owner: root
+                    group: root
+                  "/etc/awslogs/awscli.conf":
+                    content: !Sub |
+                      [plugins]
+                      cwlogs = cwlogs
+                      [default]
+                      region = ${AWS::Region}
+                    mode: '000400'
+                    owner: root
+                    group: root
+                commands:
+                  01_create_state_directory:
+                    command: "mkdir -p /var/awslogs/state"
+                services:
+                  sysvinit:
+                    awslogs:
+                      enabled: 'true'
+                      ensureRunning: 'true'
+        CreationPolicy:
+            ResourceSignal:
+              Timeout: PT30M
+        Properties:
+            InstanceType: !Ref 'RootInstanceType'
+            ImageId: !Ref 'AMI'
+            KeyName: !Ref 'KeyName'
+            Volumes:
+                - Device: xvdh
+                  VolumeId: !Ref EBSVolume
+            Tags:
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+                - Key: Node
+                  Value: Root
+            NetworkInterfaces:
+                - NetworkInterfaceId: !If [IfEFA, !Ref EFANetworkInterface, !Ref DefaultNetworkInterface]
+                  DeviceIndex: 0
+            UserData:
+                Fn::Base64:
+                    Fn::Sub:
+                      - |
+                        #!/bin/bash -e
+                        export HOME=/home/ec2-user
+                        exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+                        set -x -v -e
+                        install_cmd=yum
+                        if [[ ${Label} == ubuntu* ]]; then
+                            install_cmd=apt-get
+                        fi
+                        $install_cmd update -y aws-cfn-bootstrap
+                        /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} \
+                                --resource RootNode \
+                                --region ${AWS::Region}
+                        cfn_signal_on_exit()
+                        {
+                            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} \
+                                --resource RootNode \
+                                --region ${AWS::Region}
+                        }
+                        trap cfn_signal_on_exit EXIT
+                        sudo $install_cmd -y install xfsprogs
+                        sudo mkfs -t xfs /dev/xvdh
+                        install_dir=/shared
+                        sudo mkdir $install_dir
+                        sudo mount /dev/xvdh $install_dir
+                        cd $install_dir
+                        ./install-os-dep.sh ${Label} "update"
+                        ./install-os-dep.sh ${Label} "install_deps"
+                        git clone https://github.com/dipti-kothari/libfabric-ci-scripts.git
+                        cd libfabric-ci-scripts
+                        efa_installer_url="https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz"
+                        efa_installer_version=${EFAInstallerVersion}
+                        if [[ ${job_type} == "EFAInstallerPipeline" ]]; then
+                            efa_installer_url="https://s3-us-west-2.amazonaws.com/aws-efa-installer-dev/aws-efa-installer-latest.tar.gz"
+                        fi
+                        if [[ ${job_type} == "PR" ]] && [ ${TargetBranch} == "v1.8.x" ]; then
+                            efa_installer_url="https://efa-installer.amazonaws.com/aws-efa-installer-1.7.1.tar.gz"
+                            efa_installer_version=1.7.1
+                        fi
+                        ./install-software.sh ${job_type} $install_dir ${NetworkInterfaceType} $efa_installer_url $efa_installer_version ${PullRequestId} ${PullRequestRef}
+                      - job_type: !Ref 'JobType'
+    ComputeNode1:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub
+                - "https://s3.amazonaws.com/${Bucket}/compute-node.yaml"
+                - { Bucket: !Ref ComputeTemplateS3BucketName }
+            Parameters:
+                StackName: !Sub
+                    - Nested-ComputeNode1-${Name}
+                    - { Name: !Ref StackName }
+                KeyName: !Ref KeyName
+                SecurityGroup: !If [IfEFA, !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup], !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]]
+                ComputeInstanceType: !Ref ComputeInstanceType
+                AMI: !Ref AMI
+                JobType: !Ref JobType
+                Workspace: !Ref Workspace
+                BuildNumber: !Ref BuildNumber
+                NetworkInterfaceType: !Ref NetworkInterfaceType
+                PlacementGroup: !If [IfPlacementGroup, !Ref EFAPlacementGroup, !Ref "AWS::NoValue"]
+                EBSVolumeId: !Ref EBSVolume
+                TargetBranch: !Ref TargetBranch
+                Label: !Ref Label
+                TestSkipKmod: !Ref TestSkipKmod
+                RunImpiTest: !Ref RunImpiTest
+                SubnetId: !Ref SubnetId
+                CanarySubJob: !Ref CanarySubJob
+                EFAInstallerVersion: !Ref EFAInstallerVersion
+                LogGroupName: ${AWS::StackName}-${LogstreamDate}
+            Tags:
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+                - Key: StackType
+                  Value: Compute
+        DependsOn: RootNode
+    ComputeNode2:
+        Type: AWS::CloudFormation::Stack
+        Condition: IfMulti
+        Properties:
+            TemplateURL: !Sub
+                - "https://s3.amazonaws.com/${Bucket}/compute-node.yaml"
+                - { Bucket: !Ref ComputeTemplateS3BucketName }
+            Parameters:
+                StackName: !Sub
+                    - Nested-ComputeNode2-${Name}
+                    - { Name: !Ref StackName }
+                KeyName: !Ref KeyName
+                ComputeInstanceType: !Ref ComputeInstanceType
+                AMI: !Ref AMI
+                JobType: !Ref JobType
+                Workspace: !Ref Workspace
+                BuildNumber: !Ref BuildNumber
+                NetworkInterfaceType: !Ref NetworkInterfaceType
+                SecurityGroup: !If [IfEFA, !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup], !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]]
+                PlacementGroup: !If [IfPlacementGroup, !Ref EFAPlacementGroup, !Ref "AWS::NoValue"]
+                EBSVolumeId: !Ref EBSVolume
+                TargetBranch: !Ref TargetBranch
+                Label: !Ref Label
+                TestSkipKmod: !Ref TestSkipKmod
+                RunImpiTest: !Ref RunImpiTest
+                SubnetId: !Ref SubnetId
+                CanarySubJob: !Ref CanarySubJob
+                EFAInstallerVersion: !Ref EFAInstallerVersion
+                LogGroupName: ${AWS::StackName}-${LogstreamDate}
+            Tags:
+                - Key: Workspace
+                  Value: !Ref Workspace
+                - Key: Build_Number
+                  Value: !Ref BuildNumber
+                - Key: StackType
+                  Value: Compute
+        DependsOn: RootNode
+Outputs:
+    ComputeInstance1Id:
+        Description: LogicalId of Instance1
+        Value: Fn::GetAtt: [ ComputeNode1, Outputs.ComputeInstanceId ]
+    ComputeInstance2Id:
+        Description: EBS Volume Id
+        Value: Fn::GetAtt: [ ComputeNode2, Outputs.ComputeInstanceId ]
