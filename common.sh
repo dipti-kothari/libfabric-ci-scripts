@@ -174,9 +174,13 @@ create_resource()
     fi
     create_resource_count=0
     root_instance_type=m5.large
-    if [[ ${PROVIDER} == efa ]]; then
-        instance_types=(m5n.24xlarge c5n.18xlarge)
-    elif [ $ami_arch = "aarch64" ]; then
+    case ${PROVIDER} in
+        efa) instance_types=(m5n.24xlarge c5n.18xlarge)
+            ;;
+        *) instance_types=(c5.large)
+            ;;
+    esac
+    if [ $ami_arch = "aarch64" ]; then
         root_instance_type=a1.4xlarge
         instance_types=(a1.4xlarge)
     fi
