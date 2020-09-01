@@ -111,14 +111,9 @@ Metadata: {}
 Conditions:
     IfNoSG: !Equals [!Ref 'SecurityGroup', None]
     IfEFA: !Equals [!Ref 'NetworkInterfaceType', efa]
-    IfNoEFA: !Not 
-        - !Condition IfEFA
     IfEFASG: !And
         - !Condition IfNoSG
         - !Condition IfEFA
-    IfDefaultSG: !And
-        - !Condition IfNoSG
-        - !Condition IfNoEFA 
     IfPlacementGroup: !Equals [!Ref 'EnablePlacementGroup', 1]
     IfMulti: !Equals [!Ref 'TestType', multi]
 Resources:
@@ -168,7 +163,6 @@ Resources:
             GroupId: !GetAtt EFASecurityGroup.GroupId
     DefaultSecurityGroup:
         Type: AWS::EC2::SecurityGroup
-        Condition: IfDefaultSG
         Properties:
             GroupDescription: Default Security Group
             GroupName: !Sub '${StackName}_default_sg'
@@ -224,7 +218,6 @@ Resources:
                   Value: !Ref BuildNumber
     DefaultNetworkInterface:
         Type: AWS::EC2::NetworkInterface
-        Condition: IfNoEFA
         Properties:
             GroupSet:
                 - !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]
