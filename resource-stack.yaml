@@ -340,7 +340,7 @@ Resources:
                 - Key: Node
                   Value: Root
             NetworkInterfaces:
-                - NetworkInterfaceId: !If [IfEFA, !Ref EFANetworkInterface, !Ref DefaultNetworkInterface]
+                - NetworkInterfaceId: !Ref DefaultNetworkInterface
                   DeviceIndex: 0
             UserData:
                 Fn::Base64:
