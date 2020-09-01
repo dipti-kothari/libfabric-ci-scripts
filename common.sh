@@ -185,7 +185,7 @@ create_resource()
     while [ ${create_resource_exit_code} -ne 0 ] && [ ${create_resource_count} -lt 30 ]; do
         for subnet in ${subnet_ids[@]}; do
             for instance_type in ${instance_types[@]}; do
-                aws --region ${region} cloudformation create-stack \
+                aws --region ${AWS_DEFAULT_REGION} cloudformation create-stack \
                     --stack-name resource-stack-${BUILD_NUMBER} \
                     --template-body file://resource-stack.yaml \
                     --parameters ParameterKey=StackName,ParameterValue=resource-stack-${BUILD_NUMBER} ParameterKey=VPCId,ParameterValue=${vpc_id} ParameterKey=SubnetId,ParameterValue=${subnet} ParameterKey=JobType,ParameterValue=${job_type} ParameterKey=TestType,ParameterValue=${test_type} ParameterKey=RootInstanceType,ParameterValue=${root_instance_type} ParameterKey=ComputeInstanceType,ParameterValue=${instance_type} ParameterKey=AMI,ParameterValue=${ami} ParameterKey=KeyName,ParameterValue=${slave_keypair} ParameterKey=Workspace,ParameterValue=${WORKSPACE} ParameterKey=BuildNumber,ParameterValue=${BUILD_NUMBER} ParameterKey=NetworkInterfaceType,ParameterValue=${PROVIDER} ParameterKey=ComputeTemplateS3BucketName,ParameterValue=${compute_node_template_bucket} ParameterKey=EnablePlacementGroup,ParameterValue=${ENABLE_PLACEMENT_GROUP} ParameterKey=Label,ParameterValue=${label} ParameterKey=TestSkipKmod,ParameterValue=${TEST_SKIP_KMOD} ParameterKey=RunImpiTest,ParameterValue=${RUN_IMPI_TESTS} ParameterKey=EFAInstallerVersion,ParameterValue=${efa_installer_version} ParameterKey=LogstreamDate,ParameterValue=${log_date} ${extra_params} \
