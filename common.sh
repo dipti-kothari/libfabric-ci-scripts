@@ -204,6 +204,7 @@ create_resource()
                         --output text)
                     break 3
                 fi
+                aws cloudformation delete-stack --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}
             done
         done
         create_resource_count=$((create_resource_count+1))
@@ -275,7 +276,7 @@ on_exit()
     return_code=$?
     set +e
     convert_text_to_tap
-    aws cloudformation delete-stack --stack-name ${BUILD_TAG}-resource-stack
+    aws cloudformation delete-stack --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}
     return $return_code
 }
 
