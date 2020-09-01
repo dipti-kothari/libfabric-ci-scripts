@@ -462,7 +462,9 @@ Resources:
 Outputs:
     ComputeInstance1Id:
         Description: LogicalId of Instance1
-        Value: Fn::GetAtt: [ ComputeNode1, Outputs.ComputeInstanceId ]
+        Value: Fn::GetAtt 
+            - [ ComputeNode1, Outputs.ComputeInstanceId ]
     ComputeInstance2Id:
         Description: EBS Volume Id
-        Value: Fn::GetAtt: [ ComputeNode2, Outputs.ComputeInstanceId ]
+        Value: Fn::GetAtt
+            - [ ComputeNode2, Outputs.ComputeInstanceId ]
