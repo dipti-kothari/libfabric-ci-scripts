@@ -177,6 +177,7 @@ create_resource()
     if [[ ${PROVIDER} == efa ]]; then
         instance_types=(m5n.24xlarge c5n.18xlarge)
     elif [ $ami_arch = "aarch64" ]; then
+        root_instance_type=a1.4xlarge
         instance_types=(a1.4xlarge)
     fi
     echo "==> Creating resource stack"
@@ -187,7 +188,7 @@ create_resource()
                 aws --region ${region} cloudformation create-stack \
                     --stack-name ${BUILD_TAG}-resource-stack \
                     --template-body file://resource-stack.yaml \
-                    --parameters ParameterKey=StackName,ParameterValue=${BUILD_TAG}-resource-stack ParameterKey=VPCId,ParameterValue=${vpc_id} ParameterKey=SubnetId,ParameterValue=${subnet} ParameterKey=JobType,ParameterValue=${job_type} ParameterKey=TestType,ParameterValue=${test_type} ParameterKey=SecurityGroup,ParameterValue=${security_group} ParameterKey=RootInstanceType,ParameterValue=${root_instance_type} ParameterKey=ComputeInstanceType,ParameterValue=${instance_type} ParameterKey=AMI,ParameterValue=${ami} ParameterKey=KeyName,ParameterValue=${slave_keypair} ParameterKey=Workspace,ParameterValue=${WORKSPACE} ParameterKey=BuildNumber,ParameterValue=${BUILD_NUMBER} ParameterKey=NetworkInterfaceType,ParameterValue=${PROVIDER} ParameterKey=ComputeTemplateS3BucketName,ParameterValue=${compute_node_template_bucket} ParameterKey=EnablePlacementGroup,ParameterValue=${ENABLE_PLACEMENT_GROUP} ParameterKey=Label,ParameterValue=${label} ParameterKey=TestSkipKmod,ParameterValue=${TEST_SKIP_KMOD} ParameterKey=RunImpiTest,ParameterValue=${RUN_IMPI_TESTS} ParameterKey=EFAInstallerVersion,ParameterValue=${efa_installer_version} ParameterKey=LogstreamDate,ParameterValue=${log_date} ${extra_params} \
+                    --parameters ParameterKey=StackName,ParameterValue=${BUILD_TAG}-resource-stack ParameterKey=VPCId,ParameterValue=${vpc_id} ParameterKey=SubnetId,ParameterValue=${subnet} ParameterKey=JobType,ParameterValue=${job_type} ParameterKey=TestType,ParameterValue=${test_type} ParameterKey=RootInstanceType,ParameterValue=${root_instance_type} ParameterKey=ComputeInstanceType,ParameterValue=${instance_type} ParameterKey=AMI,ParameterValue=${ami} ParameterKey=KeyName,ParameterValue=${slave_keypair} ParameterKey=Workspace,ParameterValue=${WORKSPACE} ParameterKey=BuildNumber,ParameterValue=${BUILD_NUMBER} ParameterKey=NetworkInterfaceType,ParameterValue=${PROVIDER} ParameterKey=ComputeTemplateS3BucketName,ParameterValue=${compute_node_template_bucket} ParameterKey=EnablePlacementGroup,ParameterValue=${ENABLE_PLACEMENT_GROUP} ParameterKey=Label,ParameterValue=${label} ParameterKey=TestSkipKmod,ParameterValue=${TEST_SKIP_KMOD} ParameterKey=RunImpiTest,ParameterValue=${RUN_IMPI_TESTS} ParameterKey=EFAInstallerVersion,ParameterValue=${efa_installer_version} ParameterKey=LogstreamDate,ParameterValue=${log_date} ${extra_params} \
                     --capabilities CAPABILITY_NAMED_IAM \
                     --disable-rollback
                 aws cloudformation wait stack-create-complete --stack-name ${BUILD_TAG}-resource-stack
