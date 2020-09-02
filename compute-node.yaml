@@ -198,7 +198,7 @@ Resources:
                                 --region ${AWS::Region}
                         }
                         trap cfn_signal_on_exit EXIT
-                        ouput_dir_path=${HOME}/output_dir
+                        ouput_dir_path=$HOME/output_dir
                         mkdir $ouput_dir_path
                         sudo $install_cmd -y install xfsprogs
                         install_dir="/shared"
