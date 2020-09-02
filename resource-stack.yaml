@@ -245,7 +245,7 @@ Resources:
                     command: "mkdir -p /var/awslogs/state"
                 services:
                   sysvinit:
-                    awslogs:
+                    awslogsd:
                       enabled: 'true'
                       ensureRunning: 'true'
         CreationPolicy:
