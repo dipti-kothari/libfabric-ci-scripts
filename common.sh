@@ -29,6 +29,7 @@ case $job_type in
                 ;;
 
 esac
+compute_node_template_bucket=my-test-bucket-dkothar
 get_alinux_ami_id() {
     region=$1
     if [ "$ami_arch" = "x86_64" ]; then
