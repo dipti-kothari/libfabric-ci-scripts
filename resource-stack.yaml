@@ -323,7 +323,7 @@ Resources:
                     - Nested-ComputeNode1-${Name}
                     - { Name: !Ref StackName }
                 KeyName: !Ref KeyName
-                SecurityGroup: !If [IfEFA, !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup], !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]]
+                SecurityGroup: !If [IfEFA, !Ref EFASecurityGroup, !Ref DefaultSecurityGroup]
                 ComputeInstanceType: !Ref ComputeInstanceType
                 AMI: !Ref AMI
                 JobType: !Ref JobType
@@ -365,7 +365,7 @@ Resources:
                 Workspace: !Ref Workspace
                 BuildNumber: !Ref BuildNumber
                 NetworkInterfaceType: !Ref NetworkInterfaceType
-                SecurityGroup: !If [IfEFA, !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup], !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]]
+                SecurityGroup: !If [IfEFA, !Ref EFASecurityGroup, !Ref DefaultSecurityGroup]
                 PlacementGroup: !If [IfPlacementGroup, !Ref EFAPlacementGroup, !Ref "AWS::NoValue"]
                 EBSVolumeId: !Ref EBSVolume
                 TargetBranch: !Ref TargetBranch
