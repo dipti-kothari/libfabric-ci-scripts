@@ -11,18 +11,6 @@ NODES=2
 # enable this after it is fixed.
 # export ENABLE_PLACEMENT_GROUP=1
 
-# Test whether the instance is ready for SSH or not. Once the instance is ready,
-# copy SSH keys from Jenkins and install libfabric
-install_libfabric()
-{
-    check_provider_os "$1"
-    test_ssh "$1"
-    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ${ami[1]}@$1:~/.ssh/id_rsa
-    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}.pub ${ami[1]}@$1:~/.ssh/id_rsa.pub
-    ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@$1 \
-        "bash -s" -- < ${tmp_script}
-}
-
 runfabtests_script_builder()
 {
     cat <<-"EOF" > multinode_runfabtests.sh
@@ -50,7 +38,7 @@ runfabtests_script_builder()
             FABTESTS_OPTS+=" -C \"-P 0\" -s $gid_s -c $gid_c -t all"
         fi
     fi
-    bash -c "$runfabtests_script ${FABTESTS_OPTS} ${PROVIDER} ${SERVER_IP} ${CLIENT_IP}"
+    bash -c "$runfabtests_script ${FABTESTS_OPTS} ${PROVIDER} ${SERVER_IP} ${CLIENT_IP}" | tee ~/           output_dir/fabtests.txt
 EOF
 }
 
@@ -72,17 +60,7 @@ execute_runfabtests()
     set -x
 }
 
-set +x
-create_instance || { echo "==>Unable to create instance"; exit 65; }
-set -x
-INSTANCE_IDS=($INSTANCE_IDS)
-
-execution_seq=$((${execution_seq}+1))
-# Wait until all instances have passed status check
-for ID in ${INSTANCE_IDS[@]}; do
-    test_instance_status "$ID" &
-done
-wait
+create_instance multi || { echo "==>Unable to create instance"; exit 65; }
 
 get_instance_ip
 INSTANCE_IPS=($INSTANCE_IPS)
@@ -101,7 +79,10 @@ EOF
 set -x
 
 for IP in ${INSTANCE_IPS[@]}; do
-    install_libfabric "$IP"
+    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ${ami[1]}@$IP:~/.ssh/id_rsa
+    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair}.pub ${ami[1]}@$IP:~/.ssh/id_rsa.pub
+    ssh -o ConnectTimeout=30 -o StrictHostKeyChecking=no -T -i ~/${slave_keypair} ${ami[1]}@$IP \
+        "bash -s" -- < ${tmp_script}
 done
 wait
 
@@ -154,10 +135,7 @@ fi
 runfabtests_script_builder
 
 # SSH into SERVER node and run fabtests
-N=$((${#INSTANCE_IPS[@]}-1))
-for i in $(seq 1 $N); do
-    execute_runfabtests "$i"
-done
+execute_runfabtests
 
 # Get build status
 for i in $(seq 1 $N); do
