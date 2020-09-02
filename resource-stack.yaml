@@ -99,7 +99,7 @@ Parameters:
         Description: EFAInstaller Version to download
         Type: String
         Default: latest
-    Volume_AZ:
+    VolumeAZ:
         Description: Availability Zone for the volume
         Type: String
 Metadata: {}
