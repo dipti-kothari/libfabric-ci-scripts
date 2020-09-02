@@ -194,7 +194,7 @@ create_resource()
         for subnet in ${subnet_ids[@]}; do
             for instance_type in ${instance_types[@]}; do
                 volume_az=$(aws ec2 describe-subnets \
-                    --subnet-id subnet-dfeeca94 \
+                    --subnet-id ${subnet} \
                     --query Subnets[*].AvailabilityZone \
                     --output text)
                 aws --region ${AWS_DEFAULT_REGION} cloudformation create-stack \
