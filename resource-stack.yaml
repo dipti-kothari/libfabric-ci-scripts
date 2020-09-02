@@ -229,13 +229,13 @@ Resources:
                   Value: !Ref BuildNumber
     CILogs:
         Type: AWS::Logs::LogGroup
+        DeletionPolicy: Retain
         Properties:
-              LogGroupName: !Sub
-                - ${AWS::StackName}-${Date}
-                - { Date : !Ref LogstreamDate } 
+              LogGroupName: ${AWS::StackName}
               RetentionInDays: 365
     RootNode:
         Type: 'AWS::EC2::Instance'
+        DependsOn: CILogs
         Metadata:
             AWS::CloudFormation::Init:
               config:
@@ -250,49 +250,49 @@ Resources:
 
                       [/var/log/user-data.log]
                       file = /var/log/user-data.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-user-data.log
                       datetime_format =
 
                       [/var/log/awslogs.log]
                       file = /var/log/awslogs.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-awslogs.log
                       datetime_format =
 
                       [/var/log/boot.log]
                       file = /var/log/boot.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-boot.log
                       datetime_format =
 
                       [/var/log/cfn-init.log]
                       file = /var/log/cfn-init.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-cfn-init.log
                       datetime_format =
 
                       [/var/log/cfn-wire.log]
                       file = /var/log/cfn-wire.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-cfn-wire.log
                       datetime_format =
 
                       [/var/log/cloud-init.log]
                       file = /var/log/cloud-init.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-cloud-init.log
                       datetime_format =
 
                       [/var/log/cloud-init-output.log]
                       file = /var/log/cloud-init-output.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-cloud-init-output.log
                       datetime_format =
 
                       [/var/log/cfn-init-cmd.log]
                       file = /var/log/cfn-init-cmd.log
-                      log_group_name = ${AWS::StackName}-${LogstreamDate}
+                      log_group_name = ${AWS::StackName}
                       log_stream_name = Root-Node-cfn-init-cmd.log
                       datetime_format =
                     mode: '000400'
@@ -364,10 +364,11 @@ Resources:
                         sudo mkdir $install_dir
                         sudo mount /dev/xvdh $install_dir
                         cd $install_dir
-                        ./install-os-dep.sh ${Label} "update"
-                        ./install-os-dep.sh ${Label} "install_deps"
+                        sudo $install_cmd -y install git
                         git clone https://github.com/dipti-kothari/libfabric-ci-scripts.git
                         cd libfabric-ci-scripts
+                        ./install-os-dep.sh ${Label} "update"
+                        ./install-os-dep.sh ${Label} "install_deps"
                         efa_installer_url="https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz"
                         efa_installer_version=${EFAInstallerVersion}
                         if [[ ${job_type} == "EFAInstallerPipeline" ]]; then
@@ -406,7 +407,7 @@ Resources:
                 SubnetId: !Ref SubnetId
                 CanarySubJob: !Ref CanarySubJob
                 EFAInstallerVersion: !Ref EFAInstallerVersion
-                LogGroupName: ${AWS::StackName}-${LogstreamDate}
+                NodeName: Node1
             Tags:
                 - Key: Workspace
                   Value: !Ref Workspace
@@ -443,7 +444,7 @@ Resources:
                 SubnetId: !Ref SubnetId
                 CanarySubJob: !Ref CanarySubJob
                 EFAInstallerVersion: !Ref EFAInstallerVersion
-                LogGroupName: ${AWS::StackName}-${LogstreamDate}
+                NodeName: Node2
             Tags:
                 - Key: Workspace
                   Value: !Ref Workspace

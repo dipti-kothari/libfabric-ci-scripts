@@ -85,8 +85,8 @@ Parameters:
         Description: EFAInstaller Version to download
         Type: String
         Default: latest
-    LogGroupName:
-        Description: Log group name created as part of root node stack
+    NodeName:
+        Description: Name of the node to differentiate logstreams
         Type: String
         Default: None
 Metadata: {}
@@ -137,49 +137,49 @@ Resources:
                       [/var/log/user-data.log]
                       file = /var/log/user-data.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-user-data.log
+                      log_stream_name = ${NodeName}-compute-user-data.log
                       datetime_format =
 
                       [/var/log/awslogs.log]
                       file = /var/log/awslogs.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-awslogs.log
+                      log_stream_name = ${NodeName}-compute-awslogs.log
                       datetime_format =
 
                       [/var/log/boot.log]
                       file = /var/log/boot.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-boot.log
+                      log_stream_name = ${NodeName}-compute-boot.log
                       datetime_format =
 
                       [/var/log/cfn-init.log]
                       file = /var/log/cfn-init.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-cfn-init.log
+                      log_stream_name = ${NodeName}-compute-cfn-init.log
                       datetime_format =
 
                       [/var/log/cfn-wire.log]
                       file = /var/log/cfn-wire.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-cfn-wire.log
+                      log_stream_name = ${NodeName}-compute-cfn-wire.log
                       datetime_format =
 
                       [/var/log/cloud-init.log]
                       file = /var/log/cloud-init.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-cloud-init.log
+                      log_stream_name = ${NodeName}-compute-cloud-init.log
                       datetime_format =
 
                       [/var/log/cloud-init-output.log]
                       file = /var/log/cloud-init-output.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-cloud-init-output.log
+                      log_stream_name = ${NodeName}-compute-cloud-init-output.log
                       datetime_format =
 
                       [/var/log/cfn-init-cmd.log]
                       file = /var/log/cfn-init-cmd.log
                       log_group_name = ${AWS::StackName}
-                      log_stream_name = ${LogGroupName}-cfn-init-cmd.log
+                      log_stream_name = ${NodeName}-cfn-init-cmd.log
                       datetime_format =
                     mode: '000400'
                     owner: root

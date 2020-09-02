@@ -186,16 +186,17 @@ create_resource()
     fi
     echo "==> Creating resource stack"
     create_resource_exit_code=1
+    stack_name=resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}-${log_date}
     while [ ${create_resource_exit_code} -ne 0 ] && [ ${create_resource_count} -lt 30 ]; do
         for subnet in ${subnet_ids[@]}; do
             for instance_type in ${instance_types[@]}; do
                 aws --region ${AWS_DEFAULT_REGION} cloudformation create-stack \
-                    --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER} \
+                    --stack-name ${stack_name} \
                     --template-body file://resource-stack.yaml \
-                    --parameters ParameterKey=StackName,ParameterValue=resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER} ParameterKey=VPCId,ParameterValue=${vpc_id} ParameterKey=SubnetId,ParameterValue=${subnet} ParameterKey=JobType,ParameterValue=${job_type} ParameterKey=TestType,ParameterValue=${test_type} ParameterKey=RootInstanceType,ParameterValue=${root_instance_type} ParameterKey=ComputeInstanceType,ParameterValue=${instance_type} ParameterKey=AMI,ParameterValue=${ami} ParameterKey=KeyName,ParameterValue=${slave_keypair} ParameterKey=Workspace,ParameterValue=${WORKSPACE} ParameterKey=BuildNumber,ParameterValue=${BUILD_NUMBER} ParameterKey=NetworkInterfaceType,ParameterValue=${PROVIDER} ParameterKey=ComputeTemplateS3BucketName,ParameterValue=${compute_node_template_bucket} ParameterKey=EnablePlacementGroup,ParameterValue=${ENABLE_PLACEMENT_GROUP} ParameterKey=Label,ParameterValue=${label} ParameterKey=TestSkipKmod,ParameterValue=${TEST_SKIP_KMOD} ParameterKey=RunImpiTest,ParameterValue=${RUN_IMPI_TESTS} ParameterKey=EFAInstallerVersion,ParameterValue=${efa_installer_version} ParameterKey=LogstreamDate,ParameterValue=${log_date} ${extra_params} \
+                    --parameters ParameterKey=StackName,ParameterValue=${stack_name} ParameterKey=VPCId,ParameterValue=${vpc_id} ParameterKey=SubnetId,ParameterValue=${subnet} ParameterKey=JobType,ParameterValue=${job_type} ParameterKey=TestType,ParameterValue=${test_type} ParameterKey=RootInstanceType,ParameterValue=${root_instance_type} ParameterKey=ComputeInstanceType,ParameterValue=${instance_type} ParameterKey=AMI,ParameterValue=${ami} ParameterKey=KeyName,ParameterValue=${slave_keypair} ParameterKey=Workspace,ParameterValue=${WORKSPACE} ParameterKey=BuildNumber,ParameterValue=${BUILD_NUMBER} ParameterKey=NetworkInterfaceType,ParameterValue=${PROVIDER} ParameterKey=ComputeTemplateS3BucketName,ParameterValue=${compute_node_template_bucket} ParameterKey=EnablePlacementGroup,ParameterValue=${ENABLE_PLACEMENT_GROUP} ParameterKey=Label,ParameterValue=${label} ParameterKey=TestSkipKmod,ParameterValue=${TEST_SKIP_KMOD} ParameterKey=RunImpiTest,ParameterValue=${RUN_IMPI_TESTS} ParameterKey=EFAInstallerVersion,ParameterValue=${efa_installer_version} ParameterKey=LogstreamDate,ParameterValue=${log_date} ${extra_params} \
                     --capabilities CAPABILITY_NAMED_IAM \
                     --disable-rollback
-                aws cloudformation wait stack-create-complete --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}
+                aws cloudformation wait stack-create-complete --stack-name ${stack_name}
                 create_resource_exit_code=$?
                 if [ ${create_resource_exit_code} -eq 0 ]; then
                     INSTANCE_IDS=$(aws cloudformation  describe-stacks
@@ -204,7 +205,7 @@ create_resource()
                         --output text)
                     break 3
                 fi
-                aws cloudformation delete-stack --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}
+                aws cloudformation delete-stack --stack-name ${stack_name}
             done
         done
         create_resource_count=$((create_resource_count+1))
@@ -276,7 +277,7 @@ on_exit()
     return_code=$?
     set +e
     convert_text_to_tap
-    aws cloudformation delete-stack --stack-name resource-stack-${BUILD_NUMBER}-${test_type}-${label}-${PROVIDER}
+    aws cloudformation delete-stack --stack-name ${stack_name}
     return $return_code
 }
 
