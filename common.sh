@@ -138,7 +138,7 @@ create_resource()
     log_date=$(date +%F)
     extra_params=""
     if [[ $job_type == PR ]]; then
-        extra_params="ParameterKey=SecurityGroup,ParameterValue=${slave_security_group} ParameterKey=PullRequestId,ParameterValue=${PULL_REQUEST_ID} ParameterKey=PullRequestRef,ParameterValue=${PULL_REQUEST_REF} ParameterKey=TargetBranch,ParameterValue=${TARGET_BRANCH}"
+        extra_params="ParameterKey=PullRequestId,ParameterValue=${PULL_REQUEST_ID} ParameterKey=PullRequestRef,ParameterValue=${PULL_REQUEST_REF} ParameterKey=TargetBranch,ParameterValue=${TARGET_BRANCH}"
         # TODO: the labels need to be fixed in LibfabricCI and the stack
         # redeployed for PR testing
         case "${label}" in
