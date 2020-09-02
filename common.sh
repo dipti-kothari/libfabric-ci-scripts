@@ -175,11 +175,12 @@ create_resource()
                         --query "Subnets[*].SubnetId" --output=text)
     fi
     create_resource_count=0
-    root_instance_type=m5.large
     case ${PROVIDER} in
         efa) instance_types=(m5n.24xlarge c5n.18xlarge)
+             root_instance_type=m5n.large
             ;;
-        *) instance_types=(c5.large)
+        *) instance_types=(c5n.large)
+           root_instance_type=c5n.large
             ;;
     esac
     if [ $ami_arch = "aarch64" ]; then
