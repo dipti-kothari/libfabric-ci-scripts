@@ -231,7 +231,7 @@ Resources:
         Type: AWS::Logs::LogGroup
         DeletionPolicy: Retain
         Properties:
-              LogGroupName: ${AWS::StackName}
+              LogGroupName: !Ref "AWS::StackName"
               RetentionInDays: 365
     RootNode:
         Type: 'AWS::EC2::Instance'
