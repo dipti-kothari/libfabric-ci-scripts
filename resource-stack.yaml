@@ -25,10 +25,6 @@ Parameters:
             - single
             - multi
         Default: multi
-    SecurityGroup:
-        Description: Security group for root node, if not provided will be created as part of the stack
-        Type: String
-        Default: None
     RootInstanceType:
         Description: Instance type for root node
         Type: String
@@ -105,17 +101,13 @@ Parameters:
         Default: latest
 Metadata: {}
 Conditions:
-    IfNoSG: !Equals [!Ref 'SecurityGroup', None]
     IfEFA: !Equals [!Ref 'NetworkInterfaceType', efa]
-    IfEFASG: !And
-        - !Condition IfNoSG
-        - !Condition IfEFA
     IfPlacementGroup: !Equals [!Ref 'EnablePlacementGroup', 1]
     IfMulti: !Equals [!Ref 'TestType', multi]
 Resources:
     EFASecurityGroup:
         Type: AWS::EC2::SecurityGroup
-        Condition: IfEFASG
+        Condition: IfEFA
         Properties:
             GroupDescription: EFA Security Group
             GroupName: !Sub '${StackName}_efa_sg'
@@ -133,7 +125,7 @@ Resources:
                   Value: !Ref BuildNumber
     EFASecurityGroupInbound:
         Type: AWS::EC2::SecurityGroupIngress
-        Condition: IfEFASG
+        Condition: IfEFA
         Properties:
             # EFA security group rule to allow inbound traffic to self
             IpProtocol: '-1'
@@ -141,7 +133,7 @@ Resources:
             GroupId: !GetAtt EFASecurityGroup.GroupId
     EFASecurityGroupOubound:
         Type: AWS::EC2::SecurityGroupEgress
-        Condition: IfEFASG
+        Condition: IfEFA
         Properties:
             # EFA security group rule to allow outbound traffic to self
             IpProtocol: '-1'
@@ -149,7 +141,7 @@ Resources:
             GroupId: !GetAtt EFASecurityGroup.GroupId
     EFASecurityGroupOuboundAll:
         Type: AWS::EC2::SecurityGroupEgress
-        Condition: IfEFASG
+        Condition: IfEFA
         Properties:
             # Allow outbound traffic for git clone and for nodes to talk to themselves
             IpProtocol: '-1'
@@ -205,7 +197,7 @@ Resources:
         Properties:
             InterfaceType: efa
             GroupSet:
-                - !If [IfNoSG, !Ref EFASecurityGroup, !Ref SecurityGroup]
+                - !Ref EFASecurityGroup
             SubnetId: !Ref 'SubnetId'
             Tags: 
                 - Key: Workspace
@@ -216,7 +208,7 @@ Resources:
         Type: AWS::EC2::NetworkInterface
         Properties:
             GroupSet:
-                - !If [IfNoSG, !Ref DefaultSecurityGroup, !Ref SecurityGroup]
+                - !Ref DefaultSecurityGroup
             SubnetId: !Ref 'SubnetId'
             Tags: 
                 - Key: Workspace
