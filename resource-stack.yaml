@@ -103,10 +103,6 @@ Parameters:
         Description: EFAInstaller Version to download
         Type: String
         Default: latest
-    LogstreamDate:
-        Description: Date when the log is created
-        Type: String
-        Default: 10-2-2020
 Metadata: {}
 Conditions:
     IfNoSG: !Equals [!Ref 'SecurityGroup', None]
@@ -227,15 +223,8 @@ Resources:
                   Value: !Ref Workspace
                 - Key: Build_Number
                   Value: !Ref BuildNumber
-    CILogs:
-        Type: AWS::Logs::LogGroup
-        DeletionPolicy: Retain
-        Properties:
-              LogGroupName: !Ref "AWS::StackName"
-              RetentionInDays: 365
     RootNode:
         Type: 'AWS::EC2::Instance'
-        DependsOn: CILogs
         Metadata:
             AWS::CloudFormation::Init:
               config:
@@ -247,54 +236,6 @@ Resources:
                     content: !Sub |
                       [general]
                       state_file= /var/awslogs/state/agent-state
-
-                      [/var/log/user-data.log]
-                      file = /var/log/user-data.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-user-data.log
-                      datetime_format =
-
-                      [/var/log/awslogs.log]
-                      file = /var/log/awslogs.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-awslogs.log
-                      datetime_format =
-
-                      [/var/log/boot.log]
-                      file = /var/log/boot.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-boot.log
-                      datetime_format =
-
-                      [/var/log/cfn-init.log]
-                      file = /var/log/cfn-init.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-cfn-init.log
-                      datetime_format =
-
-                      [/var/log/cfn-wire.log]
-                      file = /var/log/cfn-wire.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-cfn-wire.log
-                      datetime_format =
-
-                      [/var/log/cloud-init.log]
-                      file = /var/log/cloud-init.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-cloud-init.log
-                      datetime_format =
-
-                      [/var/log/cloud-init-output.log]
-                      file = /var/log/cloud-init-output.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-cloud-init-output.log
-                      datetime_format =
-
-                      [/var/log/cfn-init-cmd.log]
-                      file = /var/log/cfn-init-cmd.log
-                      log_group_name = ${AWS::StackName}
-                      log_stream_name = Root-Node-cfn-init-cmd.log
-                      datetime_format =
                     mode: '000400'
                     owner: root
                     group: root
@@ -340,7 +281,6 @@ Resources:
                     Fn::Sub:
                       - |
                         #!/bin/bash -e
-                        export HOME=/home/ec2-user
                         exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
                         set -x -v -e
                         install_cmd=yum
@@ -407,7 +347,6 @@ Resources:
                 SubnetId: !Ref SubnetId
                 CanarySubJob: !Ref CanarySubJob
                 EFAInstallerVersion: !Ref EFAInstallerVersion
-                NodeName: Node1
             Tags:
                 - Key: Workspace
                   Value: !Ref Workspace
@@ -444,7 +383,6 @@ Resources:
                 SubnetId: !Ref SubnetId
                 CanarySubJob: !Ref CanarySubJob
                 EFAInstallerVersion: !Ref EFAInstallerVersion
-                NodeName: Node2
             Tags:
                 - Key: Workspace
                   Value: !Ref Workspace
