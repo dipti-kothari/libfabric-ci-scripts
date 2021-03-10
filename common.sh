@@ -2,8 +2,8 @@
 
 execution_seq=1
 BUILD_CODE=0
-CURL_OPT="--retry 5"
-WGET_OPT="--tries=5"
+CURL_OPT='--retry 5 -w "Code: %{response_code}\n"'
+WGET_OPT="--tries=5 --content-on-error"
 output_dir=${output_dir:-$(mktemp -d -p $WORKSPACE)}
 tmp_script=${tmp_script:-$(mktemp -p $WORKSPACE)}
 # set default architecture of ami as x86_64
@@ -435,7 +435,9 @@ script_builder()
     # install CUDA toolkit only for non-gdr test on x86_64 platform.
     if [ "$ami_arch" = "x86_64" ] && [ "$BUILD_GDR" -eq 0 ]; then
         cat <<-"EOF" >> ${tmp_script}
-        curl -O https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
+        source ~/curl_wget_check.sh
+        curl_cmd="curl -O https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run"
+        curl_check "$curl_cmd" "$cuda_11.0.3_450.51.06_linux.run"
         chmod +x cuda_11.0.3_450.51.06_linux.run
         sudo ./cuda_11.0.3_450.51.06_linux.run --silent --toolkit
         sudo ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
@@ -560,7 +562,7 @@ set_var()
     PULL_REQUEST_ID=$1
     PULL_REQUEST_REF=$2
     PROVIDER=$3
-    export CURL_OPT="--retry 5"
+    export CURL_OPT='--retry 5 -w "Code: %{response_code}\n"'
     export WGET_OPT="--tries=5"
     echo "==>Installing OS specific packages"
 EOF
@@ -595,8 +597,10 @@ efa_software_components()
             EFA_INSTALLER_URL="https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz"
         fi
     fi
-    echo "curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL" >> ${tmp_script}
+    echo "source ~/curl_wget_check.sh"
+    echo "curl_cmd=\"curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL\"" >> ${tmp_script}
     cat <<-"EOF" >> ${tmp_script}
+    curl_check "$curl_cmd" "efa-installer.tar.gz"
     tar -xf efa-installer.tar.gz
     cd ${HOME}/aws-efa-installer
 EOF

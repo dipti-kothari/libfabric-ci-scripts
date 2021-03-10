@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source ~/curl_wget_check.sh
+CURL_OPT='--retry 5 -w "Code: %{response_code}\n"'
 os_name="$(. /etc/os-release; echo $NAME)"
 os_version_id="$(. /etc/os-release; echo $VERSION_ID)"
 # Make the version the same with nvidia driver
@@ -25,7 +27,8 @@ else
     pkg_name="nvidia-fabricmanager-450-${pkg_version}-1.${pkg_arch_label}.rpm"
 fi
 pkg_repo="https://developer.download.nvidia.com/compute/cuda/repos/${pkg_distribution}/x86_64"
-curl --retry 5 -O ${pkg_repo}/${pkg_name}
+curl_cmd="curl ${CURL_OPT} -O ${pkg_repo}/${pkg_name}"
+curl_check "$curl_cmd" "${pkg_name}"
 if [ "$os_name" == "Ubuntu" ]; then
     sudo apt install -y ./${pkg_name}
 elif [ "$os_name" == "OpenSUSE Leap" ] || [ "$os_name" == "SLES" ]; then

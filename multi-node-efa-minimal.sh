@@ -109,6 +109,12 @@ INSTANCE_IPS=($INSTANCE_IPS)
 # Prepare AMI specific libfabric installation script
 multi_node_efa_minimal_script_builder
 
+for IP in ${INSTANCE_IPS[@]}; do
+    scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} \
+        $WORKSPACE/libfabric-ci-scripts/curl_wget_check.sh:~/ \
+        ${ami[1]}@${IP}
+done
+
 # Generate ssh key for fabtests
 set +x
 if [ ! -f $WORKSPACE/libfabric-ci-scripts/fabtests_${slave_keypair} ]; then
