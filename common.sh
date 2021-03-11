@@ -597,9 +597,10 @@ efa_software_components()
             EFA_INSTALLER_URL="https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz"
         fi
     fi
-    echo "source ~/curl_wget_check.sh"
-    echo "curl_cmd=\"curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL\"" >> ${tmp_script}
+    echo "EFA_INSTALLER_URL=$EFA_INSTALLER_URL" >> ${tmp_script}
     cat <<-"EOF" >> ${tmp_script}
+    source ~/curl_wget_check.sh
+    curl_cmd="curl ${CURL_OPT} -o efa-installer.tar.gz $EFA_INSTALLER_URL"
     curl_check "$curl_cmd" "efa-installer.tar.gz"
     tar -xf efa-installer.tar.gz
     cd ${HOME}/aws-efa-installer
