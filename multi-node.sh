@@ -77,8 +77,8 @@ script_builder multi-node
 
 for IP in ${INSTANCE_IPS[@]}; do
     scp -o ConnectTimeout=30 -o StrictHostKeyChecking=no -i ~/${slave_keypair} \
-          $WORKSPACE/libfabric-ci-scripts/curl_wget_check.sh:~/ \
-          ${ami[1]}@${IP}
+          $WORKSPACE/libfabric-ci-scripts/curl_wget_check.sh \
+          ${ami[1]}@${IP}:~/
 done
 # Generate ssh key for fabtests
 set +x
