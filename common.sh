@@ -436,8 +436,8 @@ script_builder()
     if [ "$ami_arch" = "x86_64" ] && [ "$BUILD_GDR" -eq 0 ]; then
         cat <<-"EOF" >> ${tmp_script}
         source ~/curl_wget_check.sh
-        curl_cmd="curl -O https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run"
-        curl_check "$curl_cmd" "$cuda_11.0.3_450.51.06_linux.run"
+        curl_cmd="curl ${CURL_OPT} -O https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run"
+        curl_check "$curl_cmd" "cuda_11.0.3_450.51.06_linux.run"
         chmod +x cuda_11.0.3_450.51.06_linux.run
         sudo ./cuda_11.0.3_450.51.06_linux.run --silent --toolkit
         sudo ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
