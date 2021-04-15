@@ -242,11 +242,8 @@ create_instance()
     vpc_id=$(AWS_DEFAULT_REGION=us-west-2 aws ec2 describe-security-groups \
             --group-ids ${slave_security_group} \
             --query SecurityGroups[0].VpcId --output=text)
-    subnet_ids=$(AWS_DEFAULT_REGION=us-west-2 aws ec2 describe-subnets \
-            --filters "Name=availability-zone,Values=[us-west-2a,us-west-2b,us-west-2c]" \
-                        "Name=vpc-id,Values=$vpc_id" \
-                        --query "Subnets[*].SubnetId" --output=text)
-
+    subnet_ids=${BUILD_SUBNET_ID}
+    slave_security_group=${BUILD_SECURITY_GROUP}
     INSTANCE_IDS=''
     SERVER_ERROR=(
     InsufficientInstanceCapacity
